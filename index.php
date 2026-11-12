@@ -29,9 +29,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (isset($akun[$username]) && $akun[$username]['password'] === $password) {
+       if (isset($akun[$username]) && $akun[$username]['password'] === $password) {
         $_SESSION['user'] = ['username' => $username, 'peran' => $akun[$username]['peran']];
-        $berhasil = 'Login berhasil sebagai ' . $akun[$username]['peran'];
+
+        // Arahkan ke beranda sesuai peran
+        $tujuan = [
+            'PEMASOK' => 'beranda_pemasok.php',
+            // 'PELANGGAN' => 'beranda_pelanggan.php',   // aktifkan setelah halamannya dibuat
+            // 'KURIR'     => 'beranda_kurir.php',
+        ];
+
+        if (isset($tujuan[$akun[$username]['peran']])) {
+            header('Location: ' . $tujuan[$akun[$username]['peran']]);
+            exit;
+        }
+        $berhasil = 'Login berhasil sebagai ' . $akun[$username]['peran'] . ' (halaman belum tersedia)';
     } else {
         $error = 'Username atau password salah';
     }
