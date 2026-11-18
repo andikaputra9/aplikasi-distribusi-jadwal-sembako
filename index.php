@@ -1,16 +1,8 @@
 <?php
 session_start();
 
-// Akun demo (sementara, nanti diganti query ke tabel users)
-$akun = [
-    'pemasok'   => ['password' => 'pemasok123',   'peran' => 'PEMASOK'],
-    'pelanggan' => ['password' => 'pelanggan123', 'peran' => 'PELANGGAN'],
-    'kurir'     => ['password' => 'kurir123',     'peran' => 'KURIR'],
-];
-
-function e($s) {
-    return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
-}
+require_once __DIR__ . '/app/helper.php';
+require_once __DIR__ . '/app/models/UserModel.php';
 
 // Token CSRF
 if (empty($_SESSION['csrf'])) {
@@ -20,34 +12,19 @@ if (empty($_SESSION['csrf'])) {
 $error = null;
 $berhasil = null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!hash_equals($_SESSION['csrf'], $_POST['csrf'] ?? '')) {
-        http_response_code(419);
-        exit('Token CSRF tidak valid');
-    }
-
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-
-       if (isset($akun[$username]) && $akun[$username]['password'] === $password) {
-        $_SESSION['user'] = ['username' => $username, 'peran' => $akun[$username]['peran']];
-
-        // Arahkan ke beranda sesuai peran
-        $tujuan = [
-            'PEMASOK' => 'beranda_pemasok.php',
-            // 'PELANGGAN' => 'beranda_pelanggan.php',   // aktifkan setelah halamannya dibuat
-            // 'KURIR'     => 'beranda_kurir.php',
-        ];
-
-        if (isset($tujuan[$akun[$username]['peran']])) {
-            header('Location: ' . $tujuan[$akun[$username]['peran']]);
-            exit;
-        }
-        $berhasil = 'Login berhasil sebagai ' . $akun[$username]['peran'] . ' (halaman belum tersedia)';
-    } else {
-        $error = 'Username atau password salah';
-    }
-}
+  $u = UserModel::cariByUsername($username);
+  if ($u && password_verify($password, $u['password'])) {
+      session_regenerate_id(true);
+      $_SESSION['user'] = [
+          'id'       => (int)$u['id_pengguna'],
+          'nama'     => $u['nama'],
+          'username' => $u['username'],
+          'peran'    => $u['peran'],
+      ];
+      // redirect sesuai peran (tetap seperti sebelumnya)
+  } else {
+      $error = 'Username atau password salah';
+  }
 ?>
 <!doctype html>
 <html lang="id">
