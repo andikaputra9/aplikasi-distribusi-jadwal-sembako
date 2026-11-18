@@ -1,0 +1,44 @@
+/* Tambahan gaya untuk halaman form/pelanggan/kurir (melengkapi beranda.css) */
+.topbar .back { font-size: 26px; line-height: 1; margin-right: 8px; }
+.topbar h1 { flex: 1; }
+
+label { display: block; font-size: 14px; color: #333; margin: 14px 0 4px; }
+input[type=text], input[type=date], input[type=number], select {
+  width: 100%; padding: 13px; font-size: 17px;
+  border: 2px solid #9aa39a; border-radius: 10px; background: #fff;
+}
+
+.btn {
+  display: block; width: 100%; padding: 14px; font-size: 17px; font-weight: 700;
+  border-radius: 10px; border: 2px solid var(--g2); cursor: pointer;
+  text-align: center; text-decoration: none;
+}
+.btn-p { background: var(--g2); color: #fff; }
+.btn-o { background: #fff; color: var(--g2); }
+.btns { display: flex; gap: 12px; margin-top: 20px; }
+.btns > * { flex: 1; }
+
+.err { color: #d32f2f; text-align: center; margin: 16px 0 4px; }
+.ok {
+  background: #e8f5e9; color: var(--g1); border: 1px solid var(--g2);
+  border-radius: 8px; padding: 10px; margin-bottom: 12px;
+}
+.note { font-style: italic; color: #777; text-align: center; font-size: 14px; margin-top: 28px; }
+
+.b-wait { background: var(--org); }
+.b-sched { background: var(--g2); color: #fff; }
+.b-gray { background: #e0e0e0; color: #333; font-weight: 600; font-size: 12px; }
+
+.check { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.check input { width: 24px; height: 24px; accent-color: var(--g2); margin-top: 2px; }
+.check .info { flex: 1; }
+
+.add-row { display: flex; gap: 12px; align-items: end; }
+.add-row > div { flex: 1; }
+.add-row .btn { width: auto; padding: 13px 22px; }
+
+.del { color: #d32f2f; background: none; border: 0; font-size: 14px; cursor: pointer; padding: 0; }
+.total {
+  display: flex; justify-content: space-between; font-weight: 700; font-size: 18px;
+  border-top: 2px solid #aaa; padding-top: 14px; margin-top: 14px;
+}
