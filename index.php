@@ -1,30 +1,42 @@
 <?php
-session_start();
-
-require_once __DIR__ . '/app/helper.php';
+require_once __DIR__ . '/app/helpers.php';
 require_once __DIR__ . '/app/models/UserModel.php';
 
-// Token CSRF
-if (empty($_SESSION['csrf'])) {
-    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+// Sudah login -> langsung ke beranda sesuai peran
+if (!empty($_SESSION['user']['peran']) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ' . beranda_untuk($_SESSION['user']['peran']));
+    exit;
 }
 
 $error = null;
 $berhasil = null;
 
-  $u = UserModel::cariByUsername($username);
-  if ($u && password_verify($password, $u['password'])) {
-      session_regenerate_id(true);
-      $_SESSION['user'] = [
-          'id'       => (int)$u['id_pengguna'],
-          'nama'     => $u['nama'],
-          'username' => $u['username'],
-          'peran'    => $u['peran'],
-      ];
-      // redirect sesuai peran (tetap seperti sebelumnya)
-  } else {
-      $error = 'Username atau password salah';
-  }
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    cek_csrf();
+
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    try {
+        $u = UserModel::cariByUsername($username);
+
+        if ($u && password_verify($password, $u['password'])) {
+            session_regenerate_id(true);
+            $_SESSION['user'] = [
+                'id'       => (int)$u['id_pengguna'],
+                'nama'     => $u['nama'],
+                'username' => $u['username'],
+                'peran'    => $u['peran'],
+            ];
+            header('Location: ' . beranda_untuk($u['peran']));
+            exit;
+        }
+        $error = 'Username atau password salah';
+    } catch (PDOException $ex) {
+        error_log('login: ' . $ex->getMessage());
+        $error = 'Tidak dapat terhubung ke database';
+    }
+}
 ?>
 <!doctype html>
 <html lang="id">
