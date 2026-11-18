@@ -11,6 +11,18 @@ class JadwalModel
             ->fetchAll();
     }
 
+        /** Semua jadwal untuk beranda pemasok (yang direncanakan dulu, lalu yang selesai) */
+    public static function semua(): array
+    {
+        return Database::getConnection()->query(
+            "SELECT j.id_jadwal, j.tanggal, j.sesi, j.total_pemesanan,
+                    j.estimasi_waktu, j.status_jadwal, u.nama AS nama_kurir
+             FROM jadwal j
+             JOIN users u ON u.id_pengguna = j.id_kurir
+             ORDER BY j.status_jadwal ASC, j.tanggal ASC, FIELD(j.sesi, 'PAGI', 'SIANG')"
+        )->fetchAll();
+    }
+
     /**
      * Pesanan yang bisa dipilih: yang MENUNGGU,
      * ditambah yang sudah ada di jadwal ini (saat edit).

@@ -1,23 +1,27 @@
 <?php
 session_start();
+require_once __DIR__ . '/app/models/JadwalModel.php';
 
 // Hanya pemasok yang boleh membuka halaman ini
 if (($_SESSION['user']['peran'] ?? '') !== 'PEMASOK') {
     header('Location: index.php');
     exit;
 }
-// DATA DUMMY (sementara) — nanti diganti query ke tabel jadwal
-$jadwal = [
-    ['id' => 1, 'tanggal' => 'Senin, 5 Okt 2026',  'sesi' => 'Pagi',  'kurir' => 'Slamet', 'pesanan' => 4, 'status' => 'DIRENCANAKAN'],
-    ['id' => 2, 'tanggal' => 'Senin, 5 Okt 2026',  'sesi' => 'Siang', 'kurir' => 'Joko',   'pesanan' => 3, 'status' => 'DIRENCANAKAN'],
-    ['id' => 3, 'tanggal' => 'Selasa, 6 Okt 2026', 'sesi' => 'Pagi',  'kurir' => 'Slamet', 'pesanan' => 5, 'status' => 'DIRENCANAKAN'],
-    ['id' => 4, 'tanggal' => 'Kamis, 1 Okt 2026',  'sesi' => 'Pagi',  'kurir' => 'Joko',   'pesanan' => 2, 'status' => 'SELESAI'],
-];
+
+$jadwal = JadwalModel::semua();
 
 function e($s) {
     return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
 }
+
+function tgl_id($d) {
+    $h = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    $b = [1=>'Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    $t = strtotime($d);
+    return $h[date('w', $t)] . ', ' . date('j', $t) . ' ' . $b[(int)date('n', $t)] . ' ' . date('Y', $t);
+}
 ?>
+
 <!doctype html>
 <html lang="id">
 <head>
@@ -37,10 +41,10 @@ function e($s) {
       <p class="lead">Daftar jadwal distribusi sembako</p>
 
       <?php foreach ($jadwal as $j): ?>
-        <?php $selesai = $j['status'] === 'SELESAI'; ?>
-        <article class="card">
-          <h3><?= e($j['tanggal']) ?> — Sesi <?= e($j['sesi']) ?></h3>
-          <div class="meta">Kurir: <?= e($j['kurir']) ?> | <?= (int)$j['pesanan'] ?> pesanan</div>
+        <?php $selesai = $j['status_jadwal'] === 'SELESAI'; ?>
+          <article class="card">
+            <h3><?= e(tgl_id($j['tanggal'])) ?> — Sesi <?= $j['sesi'] === 'PAGI' ? 'Pagi' : 'Siang' ?></h3>
+            <div class="meta">Kurir: <?= e($j['nama_kurir']) ?> | <?= (int)$j['total_pemesanan'] ?> pesanan</div>
           <div class="row">
             <span class="badge <?= $selesai ? 'b-done' : 'b-plan' ?>">
               <?= $selesai ? 'Selesai' : 'Direncanakan' ?>
