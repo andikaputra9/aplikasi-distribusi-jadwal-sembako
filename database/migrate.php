@@ -75,5 +75,5 @@ try {
 }
 
 if (!$isCli) {
-    echo "</pre><a href='../index.php'>&larr; Kembali ke Halaman Login</a></body></html>";
+    echo "</pre><a href='../login_view.php'>&larr; Kembali ke Halaman Login</a></body></html>";
 }

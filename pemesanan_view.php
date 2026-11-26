@@ -1,50 +1,71 @@
 <?php
 require_once __DIR__ . '/app/helpers.php';
-require_once __DIR__ . '/app/models/PemesananModel.php';
-require_once __DIR__ . '/app/models/UserModel.php';
+require_once __DIR__ . '/app/controllers/pemesanancontroller.php';
 
 wajib_peran('PELANGGAN');
 
-$idPelanggan = (int)pengguna()['id'];
-$_SESSION['keranjang'] = $_SESSION['keranjang'] ?? [];   // [id_sembako => jumlah]
+$controller = new pemesanancontroller();
 
-// Katalog dari database, diindeks dengan id_sembako
-$katalog = [];
-foreach (PemesananModel::daftarSembako() as $s) {
-    $katalog[(int)$s['id_sembako']] = $s;
-}
+$idPelanggan = (int) pengguna()['id'];
+$_SESSION['keranjang'] = $_SESSION['keranjang'] ?? [];
+
+$keranjang = &$_SESSION['keranjang'];
+
+$dataKeranjang = $controller->muatDataKeranjang(
+    $idPelanggan,
+    $keranjang
+);
+
+$katalog = $dataKeranjang['katalog'];
+$isi = $dataKeranjang['isi'];
+$total = $dataKeranjang['total'];
+$alamat = $dataKeranjang['alamat'];
 
 $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     cek_csrf();
+
     $aksi = $_POST['aksi'] ?? '';
 
     if ($aksi === 'tambah') {
-        $id     = (int)($_POST['id_sembako'] ?? 0);
-        $jumlah = (int)($_POST['jumlah'] ?? 0);
-        if (!isset($katalog[$id])) {
-            $error = 'Sembako tidak tersedia';
-        } elseif ($jumlah < 1 || $jumlah > 9999) {
-            $error = 'Jumlah tidak valid';
-        } else {
-            $_SESSION['keranjang'][$id] = ($_SESSION['keranjang'][$id] ?? 0) + $jumlah;
-            header('Location: pemesanan.php');
-            exit;
-        }
-    } elseif ($aksi === 'hapus') {
-        unset($_SESSION['keranjang'][(int)($_POST['id_sembako'] ?? 0)]);
-        header('Location: pemesanan.php');
-        exit;
-    } elseif ($aksi === 'kirim') {
         try {
-            PemesananModel::buat($idPelanggan, $_SESSION['keranjang']);
-            $_SESSION['keranjang'] = [];
-            flash('Pesanan berhasil dikirim');
-            header('Location: beranda_pelanggan.php');
+            $controller->tambahItem(
+                $keranjang,
+                (int) ($_POST['id_sembako'] ?? 0),
+                (int) ($_POST['jumlah'] ?? 0)
+            );
+
+            header('Location: pemesanan_view.php');
             exit;
+
         } catch (InvalidArgumentException $ex) {
             $error = $ex->getMessage();
+        }
+
+    } elseif ($aksi === 'hapus') {
+        $controller->hapusItem(
+            $keranjang,
+            (int) ($_POST['id_sembako'] ?? 0)
+        );
+
+        header('Location: pemesanan_view.php');
+        exit;
+
+    } elseif ($aksi === 'kirim') {
+        try {
+            $controller->kirimPesanan($idPelanggan, $keranjang);
+
+            $_SESSION['keranjang'] = [];
+
+            flash('Pesanan berhasil dikirim');
+
+            header('Location: beranda_pelanggan_view.php');
+            exit;
+
+        } catch (InvalidArgumentException $ex) {
+            $error = $ex->getMessage();
+
         } catch (Throwable $ex) {
             error_log('pemesanan: ' . $ex->getMessage());
             $error = 'Terjadi kesalahan pada server, coba lagi';
@@ -52,27 +73,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Susun isi keranjang dari harga di database; item yang sudah tidak aktif dibuang
-$isi   = [];
-$total = 0;
-foreach ($_SESSION['keranjang'] as $id => $jumlah) {
-    if (!isset($katalog[$id])) {
-        unset($_SESSION['keranjang'][$id]);
-        continue;
-    }
-    $s        = $katalog[$id];
-    $subtotal = $s['harga'] * $jumlah;
-    $total   += $subtotal;
-    $isi[]    = ['id' => $id, 'nama' => $s['nama_sembako'], 'unit' => $s['unit'],
-                 'harga' => $s['harga'], 'jumlah' => $jumlah, 'subtotal' => $subtotal];
-}
 
-$profil = UserModel::cariById($idPelanggan);
 
-$judul   = 'Pesan Sembako';
-$kembali = 'beranda_pelanggan.php';
+$judul = 'Pesan Sembako';
+$kembali = 'beranda_pelanggan_view.php';
+
 include __DIR__ . '/app/includes/layout_header.php';
 ?>
+
+
 <form method="post">
   <?= csrf_field() ?>
   <input type="hidden" name="aksi" value="tambah">
@@ -111,7 +120,7 @@ include __DIR__ . '/app/includes/layout_header.php';
 <?php if (!$isi): ?><p class="meta">Belum ada item.</p><?php endif; ?>
 
 <div class="total"><span>Total</span><span><?= rupiah($total) ?></span></div>
-<p class="meta">Dikirim ke alamat: <?= e($profil['alamat'] ?? '-') ?></p>
+<p class="meta">Dikirim ke alamat: <?= e($alamat) ?></p>
 
 <?php if ($error): ?><div class="err"><?= e($error) ?></div><?php endif; ?>
 

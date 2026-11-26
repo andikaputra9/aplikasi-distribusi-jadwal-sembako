@@ -1,10 +1,14 @@
 <?php
 require_once __DIR__ . '/app/helpers.php';
-require_once __DIR__ . '/app/models/JadwalModel.php';
+require_once __DIR__ . '/app/controllers/jadwalcontroller.php';
 
 wajib_peran('KURIR');
 
-$daftarJadwal = JadwalModel::untukKurir((int)pengguna()['id']);
+$controller = new JadwalController();
+
+$daftarJadwal = $controller->muatDaftarKurir(
+    (int) pengguna()['id']
+);
 
 $judul  = 'Jadwal Saya';
 $logout = true;

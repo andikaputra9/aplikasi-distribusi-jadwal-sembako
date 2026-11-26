@@ -1,11 +1,13 @@
 <?php
 require_once __DIR__ . '/app/helpers.php';
-require_once __DIR__ . '/app/models/JadwalModel.php';
+require_once __DIR__ . '/app/controllers/jadwalcontroller.php';
 
 wajib_peran('PEMASOK');
 
-$jadwal = JadwalModel::semua();
-$pesan  = flash();
+$controller = new jadwalcontroller();
+
+$jadwal = $controller->muatDaftar();
+$pesan = flash();
 ?>
 <!doctype html>
 <html lang="id">
@@ -37,14 +39,14 @@ $pesan  = flash();
               <?= $selesai ? 'Selesai' : 'Direncanakan' ?>
             </span>
             <?php if (!$selesai): ?>
-              <a class="btn-edit" href="jadwal_form.php?id=<?= (int)$j['id_jadwal'] ?>">Edit</a>
+              <a class="btn-edit" href="jadwal_form_view.php?id=<?= (int)$j['id_jadwal'] ?>">Edit</a>
             <?php endif; ?>
           </div>
         </article>
       <?php endforeach; ?>
     </main>
 
-    <a class="fab" href="jadwal_form.php">+ Tambah Jadwal</a>
+    <a class="fab" href="jadwal_form_view.php">+ Tambah Jadwal</a>
   </div>
 </body>
 </html>

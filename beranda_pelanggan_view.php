@@ -1,11 +1,16 @@
 <?php
 require_once __DIR__ . '/app/helpers.php';
-require_once __DIR__ . '/app/models/PemesananModel.php';
+require_once __DIR__ . '/app/controllers/pemesanancontroller.php';
 
 wajib_peran('PELANGGAN');
 
-$saya    = pengguna();
-$pesanan = PemesananModel::milikPelanggan((int)$saya['id']);
+$saya = pengguna();
+
+$controller = new PemesananController();
+
+$pesanan = $controller->muatPesananSaya(
+    (int) $saya['id']
+);
 
 $judul  = 'Beranda';
 $logout = true;
@@ -14,7 +19,7 @@ include __DIR__ . '/app/includes/layout_header.php';
 <h2 style="margin:4px 0">Halo, <?= e($saya['nama']) ?></h2>
 <p class="lead">Pesan sembako dan pantau jadwal pengirimannya.</p>
 
-<a class="btn btn-p" style="padding:22px" href="pemesanan.php">PESAN SEMBAKO</a>
+<a class="btn btn-p" style="padding:22px" href="pemesanan_view.php">PESAN SEMBAKO</a>
 
 <h2 style="margin:28px 0 12px;font-size:20px">Pesanan Saya</h2>
 <?php foreach ($pesanan as $p): $terjadwal = $p['status'] === 'TERJADWAL'; ?>

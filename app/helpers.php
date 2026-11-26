@@ -34,17 +34,26 @@ function cek_csrf(): void
 function beranda_untuk(string $peran): string
 {
     $peta = [
-        'PEMASOK'   => 'beranda_pemasok.php',
-        'PELANGGAN' => 'beranda_pelanggan.php',
-        'KURIR'     => 'beranda_kurir.php',
+        'PEMASOK'   => 'beranda_pemasok_view.php',
+        'PELANGGAN' => 'beranda_pelanggan_view.php',
+        'KURIR'     => 'beranda_kurir_view.php',
     ];
-    return $peta[$peran] ?? 'index.php';
+    return $peta[$peran] ?? 'login_view.php';
 }
 
 /** Pengguna yang sedang login (atau null) */
 function pengguna(): ?array
 {
-    return $_SESSION['user'] ?? null;
+    if (empty($_SESSION['user'])) {
+        return null;
+    }
+
+    $user = $_SESSION['user'];
+
+    $user['peran'] = $_SESSION['peran']
+        ?? ($user['peran'] ?? null);
+
+    return $user;
 }
 
 /** Batasi halaman untuk satu peran; selain itu dialihkan */
@@ -52,7 +61,7 @@ function wajib_peran(string $peran): void
 {
     $u = pengguna();
     if (!$u) {
-        header('Location: index.php');
+        header('Location: login_view.php');
         exit;
     }
     if ($u['peran'] !== $peran) {

@@ -1,73 +1,95 @@
 <?php
 require_once __DIR__ . '/app/helpers.php';
-require_once __DIR__ . '/app/models/JadwalModel.php';
+require_once __DIR__ . '/app/controllers/jadwalcontroller.php';
 
 wajib_peran('PEMASOK');
 
-// ?id=... -> ubah jadwal, tanpa id -> tambah jadwal
-$idJadwal = (int)($_GET['id'] ?? 0);
-$edit     = $idJadwal > 0;
-$today    = date('Y-m-d');
+$controller = new jadwalcontroller();
 
-$j = ['tanggal' => '', 'sesi' => 'PAGI', 'id_kurir' => 0, 'pesanan' => []];
-
-if ($edit) {
-    $ada = JadwalModel::cari($idJadwal);
-    if (!$ada) {
-        flash('Jadwal tidak ditemukan');
-        header('Location: beranda_pemasok.php');
-        exit;
-    }
-    if ($ada['status_jadwal'] === 'SELESAI') {
-        flash('Jadwal yang sudah selesai tidak dapat diubah');
-        header('Location: beranda_pemasok.php');
-        exit;
-    }
-    $j = [
-        'tanggal'  => $ada['tanggal'],
-        'sesi'     => $ada['sesi'],
-        'id_kurir' => (int)$ada['id_kurir'],
-        'pesanan'  => $ada['pesanan'],
-    ];
-}
+// ID jadwal untuk proses edit.
+$idJadwal = (int) ($_GET['id'] ?? 0);
+$edit = $idJadwal > 0;
+$today = date('Y-m-d');
 
 $error = null;
 
+// Data awal form.
+$j = [
+    'tanggal' => '',
+    'sesi' => 'PAGI',
+    'id_kurir' => 0,
+    'pesanan' => [],
+];
+
+try {
+    $formData = $controller->muatForm(
+        $edit ? $idJadwal : null
+    );
+
+    if ($edit) {
+        $j = $formData['jadwal'];
+    }
+
+} catch (InvalidArgumentException $ex) {
+    flash($ex->getMessage());
+    header('Location: beranda_pemasok_view.php');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     cek_csrf();
+
     $j = [
-        'tanggal'  => $_POST['tanggal'] ?? '',
-        'sesi'     => $_POST['sesi'] ?? '',
-        'id_kurir' => (int)($_POST['id_kurir'] ?? 0),
-        'pesanan'  => array_map('intval', (array)($_POST['id_pemesanan'] ?? [])),
+        'tanggal' => $_POST['tanggal'] ?? '',
+        'sesi' => $_POST['sesi'] ?? '',
+        'id_kurir' => (int) ($_POST['id_kurir'] ?? 0),
+        'pesanan' => array_map(
+            'intval',
+            (array) ($_POST['id_pemesanan'] ?? [])
+        ),
     ];
+
     try {
-        JadwalModel::simpan((int)pengguna()['id'], $j, $edit ? $idJadwal : null);
+        $controller->simpan(
+            (int) pengguna()['id'],
+            $j,
+            $edit ? $idJadwal : null
+        );
+
         flash('Jadwal berhasil disimpan');
-        header('Location: beranda_pemasok.php');
+
+        header('Location: beranda_pemasok_view.php');
         exit;
+
     } catch (InvalidArgumentException $ex) {
-        $error = $ex->getMessage();            // kesalahan input -> tampilkan ke pengguna
+        $error = $ex->getMessage();
+
     } catch (Throwable $ex) {
         error_log('jadwal_form: ' . $ex->getMessage());
         $error = 'Terjadi kesalahan pada server, coba lagi';
     }
 }
 
-$daftarKurir  = JadwalModel::daftarKurir();
-$daftarPesanan = JadwalModel::pesananTersedia($edit ? $idJadwal : null);
+$daftarKurir = $formData['kurir'];
+$daftarPesanan = $formData['pesanan'];
+// Mempertahankan pilihan pesanan setelah validasi gagal.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $j['pesanan'] = array_values(array_unique($j['pesanan']));
+}
 
-$judul   = $edit ? 'Ubah Jadwal' : 'Tambah Jadwal';
-$kembali = 'beranda_pemasok.php';
+$judul = $edit ? 'Ubah Jadwal' : 'Tambah Jadwal';
+$kembali = 'beranda_pemasok_view.php';
+
 include __DIR__ . '/app/includes/layout_header.php';
 ?>
+
 <form method="post">
   <?= csrf_field() ?>
 
   <label for="tanggal">Tanggal distribusi</label>
   <input type="date" id="tanggal" name="tanggal" required
-         <?= $edit ? '' : 'min="' . e($today) . '"' ?>
-         value="<?= e($j['tanggal']) ?>">
+       min="<?= e($today) ?>"
+       value="<?= e($j['tanggal']) ?>">
 
   <label for="sesi">Sesi</label>
   <select id="sesi" name="sesi">
@@ -107,7 +129,7 @@ include __DIR__ . '/app/includes/layout_header.php';
   <?php if ($error): ?><div class="err"><?= e($error) ?></div><?php endif; ?>
 
   <div class="btns">
-    <a class="btn btn-o" href="beranda_pemasok.php">BATAL</a>
+    <a class="btn btn-o" href="beranda_pemasok_view.php">BATAL</a>
     <button type="submit" class="btn btn-p"><?= $edit ? 'PERBARUI' : 'SIMPAN' ?></button>
   </div>
 </form>
